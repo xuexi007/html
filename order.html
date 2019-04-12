@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>用户订单</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" type="text/javascript"></script>
+</head>
+<body class="text-center">
+<div>
+    <h3 class="h3 mb-3 font-weight-bold">用户订单</h3>
+	<span id="order1" style="display:none"><a href="index.html">商品列表</a></span> 
+	<span id="order2" style="display:none"><a href="#" onclick="logout()">退出登录</a></span>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>订单编号</th>
+                    <th>商品名称</th>                   
+                    <th>商品价格</th>
+                    <th>购买数量</th>
+                    <th>总金额</th>
+					<th>支付状态</th>
+                </tr>
+            </thead>
+
+            <tbody id="container">
+
+            </tbody>
+
+        </table>
+    </div>
+
+</div>
+
+</body>
+
+<script>
+
+    //全局商品信息数组
+    var g_itemList = [];
+
+    //前后端分离开发模式下的前端对后端进行数据请求
+    jQuery(document).ready(function () {
+		//判断本地浏览器是否有存储Token，有的话显示 用户订单、退出连接
+		var token=localStorage.getItem("jwt");
+		//alert("获取token失败:"+token);
+		if(typeof token == "undefined" || token == null || token == ""){
+            //token不存在，隐藏用户订单、退出连接
+			$("#order1").hide();
+			$("#order2").hide();
+			alert("查看订单，请先登录");
+			window.location.href = "login.html";	
+
+		}else{
+			//token存在则需要校验token是否为有效token
+			$.ajax({
+			  type: "POST",
+			  url: "validatetoken.do",
+			  data:{"token":token},
+			  success:function(response){
+                if(response.flag){
+                   $("#order1").show();
+			       $("#order2").show();
+				   $.ajax({
+                        type: "POST",
+                        url:"api/order/getall.do",
+			            data:{"jwt":token},          
+                        success:function (data) {
+                             if(data.success){
+                                g_itemList = data.rows;
+                                reloadDom();
+                             }
+                        else {
+                           alert("获取订单信息失败，原因为"+data.msg);
+                             }
+                   },
+                     error:function (data) {
+                       alert("获取订单信息失败，原因为"+data.msg);
+                     }
+                 });
+				}else{
+                  alert("查看订单，请先登录");
+			      window.location.href = "login.html";		  
+				}
+                
+			  }
+			});
+           
+		}
+
+
+        
+    });
+
+    function reloadDom() {
+        for (var i=0; i < g_itemList.length; i++){
+            var itemVO = g_itemList[i];
+            var dom = "<tr data-id='"+itemVO.id+"' id='itemDetail"+itemVO.id+"'><td>"+itemVO.id+"</td><td>"+itemVO.productname+"</td><td>"+itemVO.price+"</td><td>"+itemVO.amount+"</td><td>"+itemVO.total+"</td><td>"+itemVO.statu+"</td></tr>";
+            $("#container").append(dom);
+
+            //此处是实现了商品列表的点击事件
+            $("#itemDetail"+itemVO.id).on("click", function (e) {
+                window.location.href="getorder.html?id="+$(this).data("id");
+            });
+        }
+    }
+
+
+	function logout(){
+        
+        localStorage.removeItem("jwt");
+		window.location.href = "index.html";
+
+	}
+
+</script>
+
+</html>

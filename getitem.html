@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>商品详情浏览</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" type="text/javascript"></script>
+</head>
+<body class="text-center">
+<div>
+    <h3 class="h3 mb-3 font-weight-bold">商品详情浏览</h3>
+
+    <div id="promoStartContainer">
+        <label style="color: red" class="font-weight-bold"></label>
+        <div>
+            <label style="color: red" class="control-label" type="text" id="promoStartPrice"></label>
+        </div>
+    </div>
+
+    <div>
+        <label class="font-weight-bold">商品名</label>
+        <div>
+           <label class="control-label" type="text" id="title"></label>
+        </div>
+    </div>
+    <p></p>
+
+    <div>
+        <label class="font-weight-bold">商品描述</label>
+        <div>
+            <label class="control-label" type="text" id="description"></label>
+        </div>
+    </div>
+    <p></p>
+
+    <div>
+        <div>
+            <img style="width: 200px; height: auto" id="imgUrl">
+        </div>
+    </div>
+     <br>
+
+    <div id="normalPriceContainer">
+        <label class="font-weight-bold">价格</label>
+        <div>
+            <label class="control-label" type="text" id="price"></label>
+        </div>
+    </div>    
+    <br>
+    <div>
+        <label class="font-weight-bold">库存</label>
+        <div>
+            <label class="control-label" type="text" id="stock"></label>
+        </div>
+    </div>
+     <br>
+
+    <div>
+        <label class="font-weight-bold">销量</label>
+        <div>
+            <label class="control-label" type="text" id="sales"></label>
+        </div>
+    </div>
+     <br>
+
+    <div class="form-actions">
+        <button id="createOrder" type="submit" class="btn btn-primary">
+            下单
+        </button>
+    </div>
+
+</div>
+
+</body>
+
+<script>
+
+    var g_itemVO = {};
+
+    //从上一个页面获得传过来的参数信息,固定写法之一
+    function getParam(paramName) {
+        paramValue = "", isFound = !1;
+        if (this.location.search.indexOf("?") == 0 && this.location.search.indexOf("=") > 1) {
+            arrSource = unescape(this.location.search).substring(1, this.location.search.length).split("&"), i = 0;
+            while (i < arrSource.length && !isFound) arrSource[i].indexOf("=") > 0 && arrSource[i].split("=")[0].toLowerCase() == paramName.toLowerCase() && (paramValue = arrSource[i].split("=")[1], isFound = !0), i++
+        }
+        return paramValue == "" && (paramValue = null), paramValue
+    }
+
+ 
+    //前后端分离开发模式下的前端对后端进行数据请求,获取商品详情
+    jQuery(document).ready(function () {
+
+        //下单按钮的点击事件
+        $("#createOrder").on("click", function () {
+            $.ajax({				
+                type: "POST", 
+                url:"api/order/createOrder.do",
+                data:{
+                    "productId":g_itemVO.id,
+                    "amount":1,   
+					"jwt":localStorage.getItem("jwt"),
+                },               
+                success:function (data) {
+                    if(data.flag){
+                        alert("下单成功");
+                        window.location.href = "order.html";
+						
+                    }
+                    else {
+                        alert(data.message);              
+                       
+                        
+                    }
+                },
+                error:function (data) {
+					//alert(localStorage.getItem("jwt"));
+                    alert("下单失败，原因为:用户未登录");
+					 window.location.href = "login.html";
+                }
+            });
+        });
+
+        //对后端数据的获取请求
+        $.ajax({			
+            type: "GET",
+            url:"product/info.do",
+            data:{
+              "id": getParam("id"),
+            },            
+            success:function (data) {
+                if(data.flag){
+                    g_itemVO = data.data;
+					//alert(g_itemVO.id);
+                    reloadDom();
+                    setInterval(reloadDom, 1000); //此处的作用是每隔1秒钟对界面进行一次刷新
+                }
+                else {
+                    alert("获取信息失败，原因为"+data.message);
+                }
+            },
+            error:function (data) {
+                alert("获取信息失败，原因为"+data.message);
+            }
+        });
+    });
+
+    function reloadDom() {
+       $("#title").text(g_itemVO.name);
+       $("#description").text(g_itemVO.desc);
+       $("#imgUrl").attr("src", g_itemVO.imgurl);
+       $("#price").text(g_itemVO.price);
+       $("#stock").text(g_itemVO.stock);
+       $("#sales").text(g_itemVO.sales);
+
+              
+    }
+
+</script>
+
+</html>

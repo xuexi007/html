@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>订单支付</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" type="text/javascript"></script>
+</head>
+<body class="text-center">
+<div>
+    <h3 class="h3 mb-3 font-weight-bold">订单支付</h3>
+
+    <div id="promoStartContainer">
+        <label style="color: red" class="font-weight-bold"></label>
+        <div>
+            <label style="color: red" class="control-label" type="text" id="promoStartPrice"></label>
+        </div>
+    </div>
+
+    <div>
+        <label class="font-weight-bold">商品名称</label>
+        <div>
+           <label class="control-label" type="text" id="productname"></label>
+        </div>
+    </div>
+    <p></p>
+    <div id="normalPriceContainer">
+        <label class="font-weight-bold">价格</label>
+        <div>
+            <label class="control-label" type="text" id="price"></label>
+        </div>
+    </div>    
+    <br>
+    <div>
+        <label class="font-weight-bold">数量</label>
+        <div>
+            <label class="control-label" type="text" id="amount"></label>
+        </div>
+    </div>
+     <br>
+
+    <div>
+        <label class="font-weight-bold">总费用</label>
+        <div>
+            <label class="control-label" type="text" id="total"></label>
+        </div>
+    </div>
+     <br>
+
+    <div class="form-actions">
+        <button id="createOrder" type="submit" class="btn btn-primary">
+            付款
+        </button>
+    </div>
+
+</div>
+
+</body>
+
+<script>
+
+    var g_itemVO = {};
+
+    //从上一个页面获得传过来的参数信息,固定写法之一
+    function getParam(paramName) {
+        paramValue = "", isFound = !1;
+        if (this.location.search.indexOf("?") == 0 && this.location.search.indexOf("=") > 1) {
+            arrSource = unescape(this.location.search).substring(1, this.location.search.length).split("&"), i = 0;
+            while (i < arrSource.length && !isFound) arrSource[i].indexOf("=") > 0 && arrSource[i].split("=")[0].toLowerCase() == paramName.toLowerCase() && (paramValue = arrSource[i].split("=")[1], isFound = !0), i++
+        }
+        return paramValue == "" && (paramValue = null), paramValue
+    }
+
+ 
+    //前后端分离开发模式下的前端对后端进行数据请求,获取商品详情
+    jQuery(document).ready(function () {
+        
+        //对后端数据的获取请求
+        $.ajax({			
+            type: "GET",
+            url:"api/order/info.do",
+            data:{
+              "orderid": getParam("id"),
+			  "jwt":localStorage.getItem("jwt"),
+            },            
+            success:function (data) {
+                if(data.flag){
+                    g_itemVO = data.data;
+                    reloadDom();
+					//下单按钮的点击事件
+		
+		if(g_itemVO.statu=='未支付'){
+        $("#createOrder").on("click", function () {
+            $.ajax({				
+                type: "POST", 
+                url:"api/order/update.do",
+                data:{
+                    "id":g_itemVO.id,
+                    "paystatus":1,   
+					"jwt":localStorage.getItem("jwt"),
+                },               
+                success:function (data) {
+                    if(data.flag){
+                        alert("订单支付成功");
+                        window.location.href = "order.html";
+                    }
+                    else {
+                        alert(data.message);              
+                       
+                        
+                    }
+                },
+                error:function (data) {
+					//alert(localStorage.getItem("jwt"));
+                    alert("下单失败，原因为:用户未登录");
+					 window.location.href = "login.html";
+                }
+            });
+        });
+		}else{
+          $("#createOrder").text("已支付");
+		}
+                    //setInterval(reloadDom, 1000); //此处的作用是每隔1秒钟对界面进行一次刷新
+                }
+                else {
+                    alert("获取信息失败，原因为"+data.message);
+                }
+            },
+            error:function (data) {
+                 alert("获取订单信息失败，原因为:用户未登录");
+					 window.location.href = "login.html";
+            }
+        });
+
+		
+    });
+
+    function reloadDom() {
+		//alert(g_itemVO.statu);
+       $("#productname").text(g_itemVO.productname);
+       $("#statu").text(g_itemVO.statu);      
+       $("#price").text(g_itemVO.price);
+       $("#amount").text(g_itemVO.amount);
+       $("#total").text(g_itemVO.total);
+
+              
+    }
+
+</script>
+
+</html>
